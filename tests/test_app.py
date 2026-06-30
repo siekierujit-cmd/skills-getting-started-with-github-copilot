@@ -13,18 +13,35 @@ def client():
 
 
 def test_unregister_participant_removes_their_email(client):
+    # Arrange
     original_activities = copy.deepcopy(activities)
+    activity_name = "Chess Club"
+    email = "new.student@mergington.edu"
+
     try:
-        activity_name = "Chess Club"
-        email = "new.student@mergington.edu"
-
+        # Act
         signup_response = client.post(f"/activities/{activity_name}/signup?email={email}")
-        assert signup_response.status_code == 200
-        assert email in activities[activity_name]["participants"]
 
+        # Assert signup
+        assert signup_response.status_code == 200
+
+        activities_response = client.get("/activities")
+        assert activities_response.status_code == 200
+
+        signed_up_participants = activities_response.json()[activity_name]["participants"]
+        assert email in signed_up_participants
+
+        # Act
         unregister_response = client.delete(f"/activities/{activity_name}/signup?email={email}")
+
+        # Assert removal
         assert unregister_response.status_code == 200
-        assert email not in activities[activity_name]["participants"]
+
+        refreshed_response = client.get("/activities")
+        assert refreshed_response.status_code == 200
+
+        refreshed_participants = refreshed_response.json()[activity_name]["participants"]
+        assert email not in refreshed_participants
     finally:
         activities.clear()
         activities.update(original_activities)
